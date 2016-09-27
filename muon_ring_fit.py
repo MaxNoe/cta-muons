@@ -28,6 +28,7 @@ def fit_event(event, pixel_x, pixel_y, params):
 
     event = calibrate_event(event, params)
     photons = event.dl1.tel[1].pe_charge
+    time = event.dl1.tel[1].peakpos
     size = np.sum(photons)
 
     if size < 500:
@@ -35,11 +36,14 @@ def fit_event(event, pixel_x, pixel_y, params):
 
     pixel_x = pixel_x.value
     pixel_y = pixel_y.value
+    time = time.value
 
     mask = photons > 10
 
     if not np.any(mask):
         return None
+
+    time_std = np.std(time)
 
     r, x, y, sigma = psf_likelihood_fit(
         pixel_x[mask],
@@ -74,6 +78,7 @@ def fit_event(event, pixel_x, pixel_y, params):
         'ratio_inside': ratio,
         'event_number': event.count,
         'size': size,
+        'time_std': time_std,
     }
 
 parser = argparse.ArgumentParser(description='Display each event in the file')
