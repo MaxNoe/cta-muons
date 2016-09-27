@@ -43,7 +43,7 @@ def fit_event(event, pixel_x, pixel_y, params):
     if not np.any(mask):
         return None
 
-    time_std = np.std(time)
+    time_std = np.std(time[mask])
 
     r, x, y, sigma = psf_likelihood_fit(
         pixel_x[mask],
