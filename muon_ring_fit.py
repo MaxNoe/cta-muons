@@ -77,11 +77,8 @@ def fit_event(event, pixel_x, pixel_y, params):
     }
 
 parser = argparse.ArgumentParser(description='Display each event in the file')
-parser.add_argument(
-    '-f', '--file', dest='input_path', action='store',
-    default=get_path('gamma_test.simtel.gz'),
-    help='path to the input file. Default = gamma_test.simtel.gz'
-)
+parser.add_argument('inputfile', dest='inputfile')
+parser.add_argument('--num-threads', '-n', dest='n_jobs', type=int, default=-1)
 
 
 def main():
@@ -93,13 +90,13 @@ def main():
 
     log.debug("[file] Reading file")
 
-    source = hessio_event_source(args.input_path)
+    source = hessio_event_source(args.inputfile)
     event = next(source)
 
     pixel_x = event.meta.pixel_pos[1][0]
     pixel_y = event.meta.pixel_pos[1][1]
 
-    with Parallel(36, verbose=10) as pool:
+    with Parallel(args.n_jobs, verbose=5) as pool:
 
         result = pool(
             delayed(fit_event)(event, pixel_x, pixel_y, params)
