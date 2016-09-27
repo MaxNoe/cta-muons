@@ -36,7 +36,6 @@ def fit_event(event, pixel_x, pixel_y, params):
 
     pixel_x = pixel_x.value
     pixel_y = pixel_y.value
-    time = time.value
 
     mask = photons > 10
 
@@ -82,7 +81,7 @@ def fit_event(event, pixel_x, pixel_y, params):
     }
 
 parser = argparse.ArgumentParser(description='Display each event in the file')
-parser.add_argument('inputfile', dest='inputfile')
+parser.add_argument('inputfile')
 parser.add_argument('--num-threads', '-n', dest='n_jobs', type=int, default=-1)
 
 
