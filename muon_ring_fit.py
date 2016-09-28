@@ -89,7 +89,7 @@ def fit_event(event, pixel_x, pixel_y, params):
         center_x=x,
         center_y=y,
         radius=r,
-        tel_radius=11.5,
+        telescope_radius=11.5,
     )
 
     return result
