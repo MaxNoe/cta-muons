@@ -82,7 +82,7 @@ def fit_event(event, pixel_x, pixel_y, params):
         radius=r,
     )
 
-    result['impact_parameter'] = impact_parameter_fit(
+    result['impact_parameter'], result['phi_max'] = impact_parameter_fit(
         pixel_x[mask],
         pixel_y[mask],
         photons[mask],
