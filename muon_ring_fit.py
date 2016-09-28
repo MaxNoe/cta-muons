@@ -13,6 +13,7 @@ from ctapipe.calib.camera.calibrators import (
 )
 from ctapipe.calib.array.muon import (
     psf_likelihood_fit,
+    impact_parameter_fit,
     mean_squared_error,
     photon_ratio_inside_ring,
     ring_completeness,
@@ -79,6 +80,16 @@ def fit_event(event, pixel_x, pixel_y, params):
         center_x=x,
         center_y=y,
         radius=r,
+    )
+
+    result['impact_parameter'] = impact_parameter_fit(
+        pixel_x[mask],
+        pixel_y[mask],
+        photons[mask],
+        center_x=x,
+        center_y=y,
+        radius=r,
+        tel_radius=11.5,
     )
 
     return result
