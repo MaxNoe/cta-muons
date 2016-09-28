@@ -42,7 +42,7 @@ def fit_event(event, pixel_x, pixel_y, params):
     if result['num_pixel'] < 5:
         return None
 
-    if result['size'] < 300:
+    if result['size'] < 200:
         return None
 
     result['time_std'] = np.std(time[mask])
