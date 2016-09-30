@@ -14,12 +14,18 @@ from ctapipe.calib.camera.calibrators import (
 )
 from ctapipe.calib.array.muon import (
     psf_likelihood_fit,
-    efficiency_likelihood_fit,
+    efficiency_fit,
     impact_parameter_chisq_fit,
     mean_squared_error,
     photon_ratio_inside_ring,
     ring_completeness,
 )
+
+
+parser = argparse.ArgumentParser(description='Display each event in the file')
+parser.add_argument('inputfile')
+parser.add_argument('outputfile')
+parser.add_argument('--num-threads', '-n', dest='n_jobs', type=int, default=-1)
 
 
 def rotate(x, y, angle):
@@ -44,65 +50,21 @@ def fit_event(event, pixel_x, pixel_y, params):
     if result['num_pixel'] < 5:
         return None
 
-    if result['size'] < 900:
+    if result['size'] < 300:
         return None
 
     result['time_std'] = np.std(time[mask])
 
-    r, x, y, sigma = psf_likelihood_fit(
-        pixel_x[mask],
-        pixel_y[mask],
-        photons[mask],
-    )
-    result.update(psf_r=r, psf_x=x, psf_y=y, psf_sigma=sigma)
-
-    result['ratio_inside'] = photon_ratio_inside_ring(
-        pixel_x[mask],
-        pixel_y[mask],
-        photons[mask],
-        center_x=x,
-        center_y=y,
-        radius=r,
-        width=sigma,
-    )
-
-    result['mean_squared_error'] = mean_squared_error(
-        pixel_x[mask],
-        pixel_y[mask],
-        photons[mask],
-        center_x=x,
-        center_y=y,
-        radius=r,
-    )
-
-    result['ring_completeness'] = ring_completeness(
-        pixel_x[mask],
-        pixel_y[mask],
-        photons[mask],
-        center_x=x,
-        center_y=y,
-        radius=r,
-    )
-
-    result['impact_parameter'], result['phi_max'] = impact_parameter_chisq_fit(
-        pixel_x[mask],
-        pixel_y[mask],
-        photons[mask],
-        center_x=x,
-        center_y=y,
-        radius=r,
-        mirror_radius=11.5,
-    )
 
     (
+        radius,
         center_x,
         center_y,
+        sigma_psf,
+        impact_parameter,
         phi_max,
         efficiency,
-        cherenkov_angle,
-        impact_parameter,
-        sigma_psf,
-    ) = efficiency_likelihood_fit(
+    ) = efficiency_fit(
         photons[mask],
         pixel_x[mask],
         pixel_y[mask],
@@ -111,22 +73,46 @@ def fit_event(event, pixel_x, pixel_y, params):
         11.5,
         28,
     )
+
     result.update(
-        eff_x=center_x,
-        eff_y=center_y,
-        eff_r=cherenkov_angle * 28,
-        eff_impact_parameter=impact_parameter,
+        radius=radius,
+        center_x=center_x,
+        center_y=center_y,
+        sigma=sigma_psf,
+        impact_parameter=impact_parameter,
+        phi_max=phi_max,
         efficiency=efficiency,
-        eff_phi_max=phi_max,
-        eff_sigma=sigma_psf,
+    )
+
+    result['ratio_inside'] = photon_ratio_inside_ring(
+        pixel_x[mask],
+        pixel_y[mask],
+        photons[mask],
+        center_x=center_x,
+        center_y=center_y,
+        radius=radius,
+        width=sigma_psf,
+    )
+
+    result['mean_squared_error'] = mean_squared_error(
+        pixel_x[mask],
+        pixel_y[mask],
+        photons[mask],
+        center_x=center_x,
+        center_y=center_y,
+        radius=radius,
+    )
+
+    result['ring_completeness'] = ring_completeness(
+        pixel_x[mask],
+        pixel_y[mask],
+        photons[mask],
+        center_x=center_x,
+        center_y=center_y,
+        radius=radius,
     )
 
     return result
-
-parser = argparse.ArgumentParser(description='Display each event in the file')
-parser.add_argument('inputfile')
-parser.add_argument('outputfile')
-parser.add_argument('--num-threads', '-n', dest='n_jobs', type=int, default=-1)
 
 
 def main():
