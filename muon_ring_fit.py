@@ -5,6 +5,7 @@ import numpy as np
 from ctapipe.utils.linalg import rotation_matrix_2d
 import pandas as pd
 from joblib import Parallel, delayed
+from itertools import chain
 
 from ctapipe.calib.camera.calibrators import (
     calibration_parameters,
@@ -13,7 +14,8 @@ from ctapipe.calib.camera.calibrators import (
 )
 from ctapipe.calib.array.muon import (
     psf_likelihood_fit,
-    impact_parameter_fit,
+    efficiency_likelihood_fit,
+    impact_parameter_chisq_fit,
     mean_squared_error,
     photon_ratio_inside_ring,
     ring_completeness,
@@ -42,7 +44,7 @@ def fit_event(event, pixel_x, pixel_y, params):
     if result['num_pixel'] < 5:
         return None
 
-    if result['size'] < 200:
+    if result['size'] < 900:
         return None
 
     result['time_std'] = np.std(time[mask])
@@ -52,7 +54,7 @@ def fit_event(event, pixel_x, pixel_y, params):
         pixel_y[mask],
         photons[mask],
     )
-    result.update(r=r, x=x, y=y, sigma=sigma)
+    result.update(psf_r=r, psf_x=x, psf_y=y, psf_sigma=sigma)
 
     result['ratio_inside'] = photon_ratio_inside_ring(
         pixel_x[mask],
@@ -82,20 +84,48 @@ def fit_event(event, pixel_x, pixel_y, params):
         radius=r,
     )
 
-    result['impact_parameter'], result['phi_max'] = impact_parameter_fit(
+    result['impact_parameter'], result['phi_max'] = impact_parameter_chisq_fit(
         pixel_x[mask],
         pixel_y[mask],
         photons[mask],
         center_x=x,
         center_y=y,
         radius=r,
-        telescope_radius=11.5,
+        mirror_radius=11.5,
+    )
+
+    (
+        center_x,
+        center_y,
+        phi_max,
+        efficiency,
+        cherenkov_angle,
+        impact_parameter,
+        sigma_psf,
+    ) = efficiency_likelihood_fit(
+        photons[mask],
+        pixel_x[mask],
+        pixel_y[mask],
+        np.deg2rad(0.1),
+        3.8e-2,
+        11.5,
+        28,
+    )
+    result.update(
+        eff_x=center_x,
+        eff_y=center_y,
+        eff_r=cherenkov_angle * 28,
+        eff_impact_parameter=impact_parameter,
+        efficiency=efficiency,
+        eff_phi_max=phi_max,
+        eff_sigma=sigma_psf,
     )
 
     return result
 
 parser = argparse.ArgumentParser(description='Display each event in the file')
 parser.add_argument('inputfile')
+parser.add_argument('outputfile')
 parser.add_argument('--num-threads', '-n', dest='n_jobs', type=int, default=-1)
 
 
@@ -118,11 +148,11 @@ def main():
 
         result = pool(
             delayed(fit_event)(event, pixel_x, pixel_y, params)
-            for event in source
+            for event in chain([event], source)
         )
 
     df = pd.DataFrame(list(filter(lambda x: x is not None, result)))
-    df.to_hdf('fit_results.hdf5', 'data')
+    df.to_hdf(args.outputfile, 'data')
 
 
 if __name__ == '__main__':
