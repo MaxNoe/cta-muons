@@ -5,7 +5,7 @@ import numpy as np
 from ctapipe.utils.linalg import rotation_matrix_2d
 import pandas as pd
 from joblib import Parallel, delayed
-from itertools import chain
+
 
 from ctapipe.calib.camera.calibrators import (
     calibration_parameters,
@@ -28,15 +28,9 @@ parser.add_argument('outputfile')
 parser.add_argument('--num-threads', '-n', dest='n_jobs', type=int, default=-1)
 
 
-def rotate(x, y, angle):
-    x, y = np.dot(rotation_matrix_2d(angle), [x, y])
-    return x, y
-
-
-def fit_event(event, pixel_x, pixel_y, params):
-    pixel_x = pixel_x.value
-    pixel_y = pixel_y.value
-
+def fit_event(event, params):
+    pixel_x, pixel_y = event.meta.pixel_pos[1].value
+    
     result = {'event_number': event.count}
 
     event = calibrate_event(event, params)
@@ -125,16 +119,12 @@ def main():
     log.debug("[file] Reading file")
 
     source = hessio_event_source(args.inputfile)
-    event = next(source)
-
-    pixel_x = event.meta.pixel_pos[1][0]
-    pixel_y = event.meta.pixel_pos[1][1]
-
+    
     with Parallel(args.n_jobs, verbose=5) as pool:
 
         result = pool(
-            delayed(fit_event)(event, pixel_x, pixel_y, params)
-            for event in chain([event], source)
+            delayed(fit_event)(event, params)
+            for event in source
         )
 
     df = pd.DataFrame(list(filter(lambda x: x is not None, result)))
