@@ -39,14 +39,14 @@ def main():
     source = hessio_event_source(args.inputfile, allowed_tels=[1])
     fit_results = pd.read_hdf(args.fit_results)
 
-    fit_results['radius_degrees'] = np.rad2deg(fit_results['r'] / 28.0)
+    fit_results['radius_degrees'] = np.rad2deg(fit_results['radius'] / 28.0)
 
     fit_results = fit_results.query(
         'ring_completeness > 0.5 & time_std < 1.5 & size > 600 & 0.4 < radius_degrees < 1.3'
     )
 
     print(fit_results.head())
-    fit_results.set_index('event_number', inplace=True)
+    fit_results.set_index('event_id', inplace=True)
     event = next(source)
 
     pixel_x = event.meta.pixel_pos[1][0]
@@ -74,10 +74,10 @@ def main():
 
         fit_result = fit_results.loc[event.count]
         print(fit_result)
-        x, y = rotate(fit_result.x, fit_result.y, geom.pix_rotation)
+        x, y = rotate(fit_result.center_x, fit_result.center_y, geom.pix_rotation)
 
         for alpha, circ in zip((-1, 0, 1), circs):
-            circ.radius = fit_result.r + alpha * fit_result.sigma
+            circ.radius = fit_result.radius + alpha * fit_result.sigma
             circ.center = x, y
 
         calib_event = calibrate_event(event, params)

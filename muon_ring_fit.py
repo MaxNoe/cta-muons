@@ -30,7 +30,7 @@ parser.add_argument('--num-threads', '-n', dest='n_jobs', type=int, default=-1)
 
 def fit_event(event, params):
     pixel_x, pixel_y = event.meta.pixel_pos[1].value
-    
+
     result = {'event_number': event.count}
 
     event = calibrate_event(event, params)
@@ -62,8 +62,8 @@ def fit_event(event, params):
         photons[mask],
         pixel_x[mask],
         pixel_y[mask],
-        np.deg2rad(0.1),
-        3.8e-2,
+        np.deg2rad(0.088630491),
+        4.9e-2,
         11.5,
         28,
     )
@@ -119,7 +119,7 @@ def main():
     log.debug("[file] Reading file")
 
     source = hessio_event_source(args.inputfile)
-    
+
     with Parallel(args.n_jobs, verbose=5) as pool:
 
         result = pool(

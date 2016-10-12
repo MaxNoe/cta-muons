@@ -125,8 +125,8 @@ def main():
                 cherenkov_angle=fit_result.radius / 28.0,
                 impact_parameter=fit_result.impact_parameter,
                 sigma_psf=fit_result.sigma,
-                pixel_fov=np.deg2rad(0.1),
-                pixel_diameter=3.8e-2,
+                pixel_fov=np.deg2rad(0.088630491),
+                pixel_diameter=4.9e-2,
                 mirror_radius=11.5,
                 focal_length=28,
             )
